@@ -1,78 +1,182 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
-const Login: React.FC = () => {
-  const navigate = useNavigate();
+const BRAND_COLOR = "#16a34a";
+
+export default function Login() {
   const [phone, setPhone] = useState("");
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100" dir="rtl">
-      <div className="bg-white w-full max-w-md p-8 rounded-xl shadow-lg space-y-6">
+    <div style={styles.page}>
+      {/* Header */}
+      <div style={styles.header}>
+        <h1 style={styles.appName}>إبهام</h1>
+        <p style={styles.appDesc}>تطبيق توصيل الطلبات وكل شيء</p>
+      </div>
 
-        {/* Logo */}
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-800">إبهام</h1>
-          <p className="text-gray-500 mt-1">تسجيل الدخول إلى حسابك</p>
-        </div>
+      {/* Card */}
+      <div style={styles.card}>
+        <div style={styles.iconCircle}>📱</div>
 
-        {/* Phone Login */}
-        <div className="space-y-3">
-          <label className="block text-sm font-medium text-gray-700">
-            رقم الجوال
-          </label>
+        <h2 style={styles.title}>تسجيل الدخول</h2>
+        <p style={styles.subtitle}>
+          يرجى إدخال رقم هاتفك للتحقق
+        </p>
+
+        {/* Phone Input */}
+        <div style={styles.phoneBox}>
+          <span style={styles.country}>🇾🇪 +967</span>
           <input
             type="tel"
-            placeholder="05xxxxxxxx"
+            placeholder="7xxxxxxxx"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+            style={styles.input}
           />
-
-          <button
-            onClick={() => {
-              if (!phone) return alert("أدخل رقم الجوال");
-              // لاحقًا: إرسال OTP
-              navigate("/complete-profile");
-            }}
-            className="w-full bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded-lg font-semibold"
-          >
-            إرسال رمز الدخول
-          </button>
         </div>
 
-        {/* Divider */}
-        <div className="flex items-center gap-3">
-          <div className="flex-1 h-px bg-gray-300"></div>
-          <span className="text-gray-400 text-sm">أو</span>
-          <div className="flex-1 h-px bg-gray-300"></div>
-        </div>
+        {/* Send Button */}
+        <button style={styles.sendButton}>
+          إرسال
+        </button>
+
+        {/* Help */}
+        <button style={styles.helpButton}>
+          الحصول على مساعدة من خدمة العملاء
+        </button>
 
         {/* Google Login */}
         <button
+          style={styles.googleButton}
           onClick={() => {
-            // لاحقًا: Google OAuth
-            navigate("/complete-profile");
+            // لاحقًا نربطه بـ Google SDK
+            alert("Google Login (قريبًا)");
           }}
-          className="w-full border flex items-center justify-center gap-3 py-2 rounded-lg hover:bg-gray-50"
         >
-          <img
-            src="https://www.svgrepo.com/show/475656/google-color.svg"
-            alt="google"
-            className="w-5 h-5"
-          />
-          <span className="font-medium text-gray-700">
-            المتابعة باستخدام Google
-          </span>
+          الدخول عبر Google
         </button>
-
-        {/* Footer */}
-        <p className="text-xs text-gray-400 text-center">
-          بتسجيل الدخول أنت توافق على الشروط وسياسة الخصوصية
-        </p>
-
       </div>
     </div>
   );
-};
+}
 
-export default Login;
+const styles: Record<string, React.CSSProperties> = {
+  page: {
+    minHeight: "100vh",
+    background: "#f5f5f5",
+    direction: "rtl",
+    fontFamily: "system-ui",
+  },
+
+  header: {
+    background: BRAND_COLOR,
+    color: "#fff",
+    padding: "40px 20px 60px",
+    borderBottomLeftRadius: "30px",
+    borderBottomRightRadius: "30px",
+  },
+
+  appName: {
+    margin: 0,
+    fontSize: "28px",
+    fontWeight: 700,
+  },
+
+  appDesc: {
+    marginTop: "8px",
+    fontSize: "14px",
+    opacity: 0.9,
+  },
+
+  card: {
+    background: "#fff",
+    margin: "-40px auto 0",
+    borderRadius: "24px",
+    padding: "24px",
+    maxWidth: "420px",
+    boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+    textAlign: "center",
+  },
+
+  iconCircle: {
+    width: "90px",
+    height: "90px",
+    margin: "0 auto 16px",
+    borderRadius: "50%",
+    background: "#e7f6ec",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "36px",
+  },
+
+  title: {
+    margin: "8px 0",
+    fontSize: "20px",
+    fontWeight: 700,
+  },
+
+  subtitle: {
+    fontSize: "14px",
+    color: "#666",
+    marginBottom: "20px",
+  },
+
+  phoneBox: {
+    display: "flex",
+    alignItems: "center",
+    border: "1px solid #ddd",
+    borderRadius: "12px",
+    overflow: "hidden",
+    marginBottom: "16px",
+  },
+
+  country: {
+    padding: "12px",
+    background: "#f9f9f9",
+    borderLeft: "1px solid #ddd",
+    fontSize: "14px",
+  },
+
+  input: {
+    flex: 1,
+    padding: "12px",
+    border: "none",
+    outline: "none",
+    fontSize: "15px",
+  },
+
+  sendButton: {
+    width: "100%",
+    padding: "14px",
+    background: BRAND_COLOR,
+    color: "#fff",
+    border: "none",
+    borderRadius: "14px",
+    fontSize: "16px",
+    fontWeight: 600,
+    cursor: "pointer",
+    marginBottom: "12px",
+  },
+
+  helpButton: {
+    width: "100%",
+    padding: "12px",
+    background: "#fff",
+    color: BRAND_COLOR,
+    border: `1px solid ${BRAND_COLOR}`,
+    borderRadius: "14px",
+    fontSize: "14px",
+    cursor: "pointer",
+    marginBottom: "12px",
+  },
+
+  googleButton: {
+    width: "100%",
+    padding: "12px",
+    background: "#f8f8f8",
+    border: "1px solid #ddd",
+    borderRadius: "14px",
+    fontSize: "14px",
+    cursor: "pointer",
+  },
+};
