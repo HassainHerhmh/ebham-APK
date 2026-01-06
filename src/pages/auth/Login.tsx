@@ -1,9 +1,46 @@
 import { useState } from "react";
+import { GoogleLogin } from "@react-oauth/google";
+import api from "../../services/api";
 
 const BRAND_COLOR = "#16a34a";
 
 export default function Login() {
   const [phone, setPhone] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  /* =========================
+     Google Login Handler
+  ========================= */
+  const handleGoogleLogin = async (credential: string) => {
+    try {
+      setLoading(true);
+
+      const res = await api.post("/auth/google", {
+        token: credential,
+      });
+
+      if (!res.data.success) {
+        alert("فشل تسجيل الدخول عبر Google");
+        return;
+      }
+
+      const { user, token } = res.data;
+
+      // حفظ المستخدم + التوكن (مهم للـ interceptor)
+      localStorage.setItem(
+        "user",
+        JSON.stringify({ ...user, token })
+      );
+
+      // توجيه بعد الدخول
+      window.location.href = "/";
+    } catch (err) {
+      console.error("Google Login Error:", err);
+      alert("حدث خطأ أثناء تسجيل الدخول");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div style={styles.page}>
@@ -34,8 +71,8 @@ export default function Login() {
           />
         </div>
 
-        {/* Send Button */}
-        <button style={styles.sendButton}>
+        {/* Send Button (هاتف – لاحقًا) */}
+        <button style={styles.sendButton} disabled>
           إرسال
         </button>
 
@@ -45,20 +82,27 @@ export default function Login() {
         </button>
 
         {/* Google Login */}
-        <button
-          style={styles.googleButton}
-          onClick={() => {
-            // لاحقًا نربطه بـ Google SDK
-            alert("Google Login (قريبًا)");
-          }}
-        >
-          الدخول عبر Google
-        </button>
+        <div style={{ marginTop: "14px" }}>
+          <GoogleLogin
+            onSuccess={(res) => handleGoogleLogin(res.credential!)}
+            onError={() => alert("فشل تسجيل الدخول عبر Google")}
+            width="100%"
+          />
+        </div>
+
+        {loading && (
+          <p style={{ marginTop: 10, fontSize: 13, color: "#666" }}>
+            جارٍ تسجيل الدخول...
+          </p>
+        )}
       </div>
     </div>
   );
 }
 
+/* =========================
+   Styles
+========================= */
 const styles: Record<string, React.CSSProperties> = {
   page: {
     minHeight: "100vh",
@@ -154,8 +198,9 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: "14px",
     fontSize: "16px",
     fontWeight: 600,
-    cursor: "pointer",
+    cursor: "not-allowed",
     marginBottom: "12px",
+    opacity: 0.7,
   },
 
   helpButton: {
@@ -168,15 +213,5 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: "14px",
     cursor: "pointer",
     marginBottom: "12px",
-  },
-
-  googleButton: {
-    width: "100%",
-    padding: "12px",
-    background: "#f8f8f8",
-    border: "1px solid #ddd",
-    borderRadius: "14px",
-    fontSize: "14px",
-    cursor: "pointer",
   },
 };
