@@ -1,212 +1,220 @@
-import { useState } from "react";
-import { GoogleLogin } from "@react-oauth/google";
-import { useNavigate } from "react-router-dom";
-import api from "../../services/api";
+console.log("GOOGLE_CLIENT_ID =", process.env.GOOGLE_CLIENT_ID);
 
-const BRAND_COLOR = "#16a34a";
+import express from "express";
+import db from "../db.js";
+import { OAuth2Client } from "google-auth-library";
 
-export default function Login() {
-  const [phone, setPhone] = useState("");
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+const router = express.Router();
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-  /* =========================
-     Google Login Handler
-  ========================= */
-  const handleGoogleLogin = async (credential: string) => {
-    try {
-      setLoading(true);
+/* ======================================================
+   🔐 تسجيل دخول لوحة التحكم (Admins / Staff)
+====================================================== */
+router.post("/login", async (req, res) => {
+  const { identifier, password } = req.body;
 
-      const res = await api.post("/auth/google", {
-        token: credential,
-      });
+  try {
+    const [rows] = await db.query(
+      `
+      SELECT id, name, email, phone, password, role, status
+      FROM users
+      WHERE email = ? OR phone = ?
+      `,
+      [identifier, identifier]
+    );
 
-      if (!res.data.success) {
-        alert("فشل تسجيل الدخول عبر Google");
-        return;
-      }
-
-     const { customer, needProfile } = res.data;
-
-localStorage.setItem("user", JSON.stringify(customer));
-
-if (needProfile) {
-  navigate("/complete-profile", { replace: true });
-} else {
-  navigate("/home", { replace: true });
-}
-
-
-    } catch (err) {
-      console.error("Google Login Error:", err);
-      alert("حدث خطأ أثناء تسجيل الدخول");
-    } finally {
-      setLoading(false);
+    if (!rows.length) {
+      return res.json({ success: false, message: "المستخدم غير موجود" });
     }
 
-  
-  };
+    const user = rows[0];
 
-  return (
-    <div style={styles.page}>
-      {/* Header */}
-      <div style={styles.header}>
-        <h1 style={styles.appName}>إبهام</h1>
-        <p style={styles.appDesc}>تطبيق توصيل الطلبات وكل شيء</p>
-      </div>
+    if (user.status !== "active") {
+      return res.json({ success: false, message: "الحساب معطل" });
+    }
 
-      {/* Card */}
-      <div style={styles.card}>
-        <div style={styles.iconCircle}>📱</div>
+    if (user.password !== password) {
+      return res.json({ success: false, message: "كلمة المرور غير صحيحة" });
+    }
 
-        <h2 style={styles.title}>تسجيل الدخول</h2>
-        <p style={styles.subtitle}>
-          يمكنك تسجيل الدخول برقم الهاتف أو Google
-        </p>
+    delete user.password;
 
-        {/* Phone Input (قريبًا OTP) */}
-        <div style={styles.phoneBox}>
-          <span style={styles.country}>🇾🇪 +967</span>
-          <input
-            type="tel"
-            placeholder="7xxxxxxxx"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            style={styles.input}
-          />
-        </div>
+    res.json({ success: true, user });
+  } catch (err) {
+    console.error("LOGIN ERROR:", err);
+    res.status(500).json({ success: false });
+  }
+});
 
-        <button style={styles.sendButton} disabled>
-          إرسال
-        </button>
+/* ======================================================
+   🔵 تسجيل الدخول عبر Google (Customers فقط)
+====================================================== */
+router.post("/google", async (req, res) => {
+  try {
+    const { token } = req.body;
 
-        <button style={styles.helpButton}>
-          الحصول على مساعدة من خدمة العملاء
-        </button>
+    if (!token) {
+      return res.status(400).json({
+        success: false,
+        message: "Google token missing",
+      });
+    }
 
-        {/* Google Login */}
-        <div style={{ marginTop: "14px" }}>
-          <GoogleLogin
-            onSuccess={(res) =>
-              handleGoogleLogin(res.credential!)
-            }
-            onError={() =>
-              alert("فشل تسجيل الدخول عبر Google")
-            }
-            width="100%"
-          />
-        </div>
+    // 🔐 Verify Google token
+    const ticket = await googleClient.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
 
-        {loading && (
-          <p style={{ marginTop: 10, fontSize: 13, color: "#666" }}>
-            جارٍ تسجيل الدخول...
-          </p>
-        )}
-      </div>
-    </div>
-  );
-}
+    const payload = ticket.getPayload();
+    const email = payload?.email || null;
+    const name = payload?.name || null;
 
-/* =========================
-   Styles
-========================= */
-const styles: Record<string, React.CSSProperties> = {
-  page: {
-    minHeight: "100vh",
-    background: "#f5f5f5",
-    direction: "rtl",
-    fontFamily: "system-ui",
-  },
-  header: {
-    background: BRAND_COLOR,
-    color: "#fff",
-    padding: "40px 20px 60px",
-    borderBottomLeftRadius: "30px",
-    borderBottomRightRadius: "30px",
-  },
-  appName: {
-    margin: 0,
-    fontSize: "28px",
-    fontWeight: 700,
-  },
-  appDesc: {
-    marginTop: "8px",
-    fontSize: "14px",
-    opacity: 0.9,
-  },
-  card: {
-    background: "#fff",
-    margin: "-40px auto 0",
-    borderRadius: "24px",
-    padding: "24px",
-    maxWidth: "420px",
-    boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
-    textAlign: "center",
-  },
-  iconCircle: {
-    width: "90px",
-    height: "90px",
-    margin: "0 auto 16px",
-    borderRadius: "50%",
-    background: "#e7f6ec",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: "36px",
-  },
-  title: {
-    margin: "8px 0",
-    fontSize: "20px",
-    fontWeight: 700,
-  },
-  subtitle: {
-    fontSize: "14px",
-    color: "#666",
-    marginBottom: "20px",
-  },
-  phoneBox: {
-    display: "flex",
-    alignItems: "center",
-    border: "1px solid #ddd",
-    borderRadius: "12px",
-    overflow: "hidden",
-    marginBottom: "16px",
-  },
-  country: {
-    padding: "12px",
-    background: "#f9f9f9",
-    borderLeft: "1px solid #ddd",
-    fontSize: "14px",
-  },
-  input: {
-    flex: 1,
-    padding: "12px",
-    border: "none",
-    outline: "none",
-    fontSize: "15px",
-  },
-  sendButton: {
-    width: "100%",
-    padding: "14px",
-    background: BRAND_COLOR,
-    color: "#fff",
-    border: "none",
-    borderRadius: "14px",
-    fontSize: "16px",
-    fontWeight: 600,
-    cursor: "not-allowed",
-    marginBottom: "12px",
-    opacity: 0.7,
-  },
-  helpButton: {
-    width: "100%",
-    padding: "12px",
-    background: "#fff",
-    color: BRAND_COLOR,
-    border: `1px solid ${BRAND_COLOR}`,
-    borderRadius: "14px",
-    fontSize: "14px",
-    cursor: "pointer",
-    marginBottom: "12px",
-  },
-};
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email not provided by Google",
+      });
+    }
+
+    // 🔍 Search customer
+    const [rows] = await db.query(
+      `
+      SELECT
+        id,
+        name,
+        email,
+        phone,
+        backup_phone,
+        city_id,
+        neighborhood_id,
+        is_profile_complete
+      FROM customers
+      WHERE email = ?
+      LIMIT 1
+      `,
+      [email]
+    );
+
+    let customer;
+    let needProfile = false;
+
+    if (rows.length) {
+      customer = rows[0];
+      needProfile = customer.is_profile_complete === 0;
+    } else {
+      // 🆕 New Google customer
+      const [result] = await db.query(
+        `
+        INSERT INTO customers (name, email, is_profile_complete)
+        VALUES (?, ?, 0)
+        `,
+        [name, email]
+      );
+
+      customer = {
+        id: result.insertId,
+        name,
+        email,
+        phone: null,
+        backup_phone: null,
+        city_id: null,
+        neighborhood_id: null,
+        is_profile_complete: 0,
+      };
+
+      needProfile = true;
+    }
+
+    return res.json({
+      success: true,
+      customer,
+      needProfile,
+    });
+  } catch (err) {
+    console.error("GOOGLE LOGIN ERROR:", err);
+    return res.status(401).json({
+      success: false,
+      message: "Google authentication failed",
+    });
+  }
+});
+
+/* ======================================================
+   📱 تسجيل الدخول برقم الهاتف (OTP – Customers)
+   ⚠️ التحقق من OTP يتم في Firebase (Frontend)
+====================================================== */
+router.post("/phone-login", async (req, res) => {
+  try {
+    const { phone } = req.body;
+
+    if (!phone) {
+      return res.status(400).json({
+        success: false,
+        message: "رقم الهاتف مطلوب",
+      });
+    }
+
+    const [rows] = await db.query(
+      `
+      SELECT
+        id,
+        name,
+        phone,
+        email,
+        backup_phone,
+        city_id,
+        neighborhood_id,
+        is_profile_complete
+      FROM customers
+      WHERE phone = ?
+      LIMIT 1
+      `,
+      [phone]
+    );
+
+    let customer;
+    let needProfile = false;
+
+    if (rows.length) {
+      customer = rows[0];
+      needProfile = customer.is_profile_complete === 0;
+    } else {
+      // 🆕 New phone customer
+      const [result] = await db.query(
+        `
+        INSERT INTO customers (phone, is_profile_complete)
+        VALUES (?, 0)
+        `,
+        [phone]
+      );
+
+      customer = {
+        id: result.insertId,
+        name: null,
+        phone,
+        email: null,
+        backup_phone: null,
+        city_id: null,
+        neighborhood_id: null,
+        is_profile_complete: 0,
+      };
+
+      needProfile = true;
+    }
+
+    res.json({
+      success: true,
+      customer,
+      needProfile,
+    });
+  } catch (err) {
+    console.error("PHONE LOGIN ERROR:", err);
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+});
+
+export default router;
