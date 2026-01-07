@@ -130,14 +130,16 @@ export default function CompleteProfile() {
      Back Button
   ========================= */
   const goBack = () => {
-    const ok = window.confirm(
-      "هل تريد الرجوع؟ سيتم فقدان البيانات غير المحفوظة"
-    );
-    if (ok) {
-      localStorage.removeItem("user");
-      navigate("/login");
-    }
-  };
+  const confirmExit = window.confirm("هل تريد الخروج؟");
+
+  if (!confirmExit) return;
+
+  // علامة مؤقتة تسمح بالرجوع
+  sessionStorage.setItem("allowLogin", "1");
+
+  navigate("/login");
+};
+
 
   return (
     <div style={styles.page}>
