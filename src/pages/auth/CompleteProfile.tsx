@@ -4,6 +4,9 @@ import api from "../../services/api";
 
 const BRAND = "#166534";
 
+/* =========================
+   Interfaces
+========================= */
 interface City {
   id: number;
   name: string;
@@ -17,6 +20,8 @@ interface Neighborhood {
 
 export default function CompleteProfile() {
   const navigate = useNavigate();
+
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
 
   const [phone, setPhone] = useState("");
 
@@ -32,16 +37,16 @@ export default function CompleteProfile() {
   const [locLoading, setLocLoading] = useState(false);
 
   /* =========================
-     Fetch Cities
+     Load Cities
   ========================= */
   useEffect(() => {
-    (api as any).cities.getCities().then((res: any) => {
+    api.cities.getCities().then((res: any) => {
       if (res.success) setCities(res.cities);
     });
   }, []);
 
   /* =========================
-     Fetch Neighborhoods by City
+     Load Neighborhoods
   ========================= */
   const loadNeighborhoods = async (cityId: string) => {
     setDistrictId("");
@@ -49,7 +54,7 @@ export default function CompleteProfile() {
 
     if (!cityId) return;
 
-    const res = await (api as any).cities.searchNeighborhoods("");
+    const res = await api.cities.searchNeighborhoods("");
     if (res.success) {
       setNeighborhoods(
         res.neighborhoods.filter(
@@ -60,7 +65,7 @@ export default function CompleteProfile() {
   };
 
   /* =========================
-     Request Location (إجباري)
+     Request GPS Location (Required)
   ========================= */
   const requestLocation = () => {
     if (!navigator.geolocation) {
@@ -77,7 +82,7 @@ export default function CompleteProfile() {
         setLocLoading(false);
       },
       () => {
-        alert("⚠️ السماح بتفعيل الموقع ضروري لإكمال التسجيل");
+        alert("⚠️ يجب السماح بتحديد الموقع لإكمال التسجيل");
         setLocLoading(false);
       },
       { enableHighAccuracy: true }
@@ -93,13 +98,16 @@ export default function CompleteProfile() {
     }
 
     if (!latitude || !longitude) {
-      return alert("⚠️ يجب السماح بتحديد الموقع");
+      return alert("⚠️ يجب تفعيل الموقع (GPS)");
     }
 
-    const user = JSON.parse(localStorage.getItem("user")!);
-
-    // تحديث المستخدم
-    await api.put(`/users/${user.id}`, { phone });
+    // تحديث بيانات العميل
+    await api.put(`/customers/${user.id}`, {
+      phone,
+      city_id: Number(cityId),
+      neighborhood_id: Number(districtId),
+      is_profile_complete: 1,
+    });
 
     // إضافة العنوان
     await api.post("/customer-addresses", {
@@ -112,6 +120,10 @@ export default function CompleteProfile() {
     });
 
     user.phone = phone;
+    user.city_id = Number(cityId);
+    user.neighborhood_id = Number(districtId);
+    user.is_profile_complete = 1;
+
     localStorage.setItem("user", JSON.stringify(user));
 
     navigate("/home");
@@ -121,7 +133,7 @@ export default function CompleteProfile() {
     <div style={styles.page}>
       <div style={styles.card}>
         <h2 style={styles.title}>إكمال البيانات</h2>
-        <p style={styles.sub}>يرجى تعبئة البيانات التالية</p>
+        <p style={styles.sub}>يرجى تعبئة البيانات التالية لإكمال الحساب</p>
 
         {/* Phone */}
         <div style={styles.inputBox}>
@@ -177,16 +189,27 @@ export default function CompleteProfile() {
           <option value="شقة">شقة</option>
           <option value="عمل">عمل</option>
           <option value="فيلا">فيلا</option>
+          <option value="مستودع">مستودع</option>
         </select>
 
-        {/* Location */}
+        {/* GPS */}
         <button style={styles.locBtn} onClick={requestLocation}>
           {locLoading ? "⏳ جارٍ تحديد الموقع..." : "📍 السماح بتحديد الموقع"}
         </button>
 
         <div style={styles.coords}>
-          <input style={styles.coord} value={latitude} placeholder="Latitude" readOnly />
-          <input style={styles.coord} value={longitude} placeholder="Longitude" readOnly />
+          <input
+            style={styles.coord}
+            value={latitude}
+            placeholder="Latitude"
+            readOnly
+          />
+          <input
+            style={styles.coord}
+            value={longitude}
+            placeholder="Longitude"
+            readOnly
+          />
         </div>
 
         <button style={styles.button} onClick={submit}>
@@ -226,7 +249,11 @@ const styles: any = {
     overflow: "hidden",
     marginBottom: "14px",
   },
-  code: { padding: "12px", background: "#ecfdf5", borderLeft: "1px solid #ddd" },
+  code: {
+    padding: "12px",
+    background: "#ecfdf5",
+    borderLeft: "1px solid #ddd",
+  },
   input: { flex: 1, padding: "12px", border: "none", outline: "none" },
   select: {
     width: "100%",
