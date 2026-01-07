@@ -36,6 +36,13 @@ if (needProfile) {
   navigate("/home", { replace: true });
 }
 
+localStorage.setItem("user", JSON.stringify(customer));
+sessionStorage.removeItem("allowLogin");
+
+if (needProfile) {
+  navigate("/complete-profile");
+} else {
+  navigate("/");
 
     } catch (err) {
       console.error("Google Login Error:", err);
@@ -43,6 +50,8 @@ if (needProfile) {
     } finally {
       setLoading(false);
     }
+
+  
   };
 
   return (
