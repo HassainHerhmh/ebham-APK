@@ -4,9 +4,6 @@ import api from "../../services/api";
 
 const BRAND = "#166534";
 
-/* =========================
-   Interfaces
-========================= */
 interface City {
   id: number;
   name: string;
@@ -36,16 +33,18 @@ export default function CompleteProfile() {
   const [locLoading, setLocLoading] = useState(false);
 
   /* =========================
-     Load Cities
+     Fetch Cities
   ========================= */
   useEffect(() => {
-    api.cities.getCities().then((res: any) => {
-      if (res.success) setCities(res.cities);
+    api.get("/cities").then((res) => {
+      if (res.data.success) {
+        setCities(res.data.cities);
+      }
     });
   }, []);
 
   /* =========================
-     Load Neighborhoods
+     Fetch Neighborhoods
   ========================= */
   const loadNeighborhoods = async (cityId: string) => {
     setDistrictId("");
@@ -53,10 +52,10 @@ export default function CompleteProfile() {
 
     if (!cityId) return;
 
-    const res = await api.cities.searchNeighborhoods("");
-    if (res.success) {
+    const res = await api.get("/cities/neighborhoods/search?q=");
+    if (res.data.success) {
       setNeighborhoods(
-        res.neighborhoods.filter(
+        res.data.neighborhoods.filter(
           (n: Neighborhood) => String(n.city_id) === cityId
         )
       );
@@ -64,7 +63,7 @@ export default function CompleteProfile() {
   };
 
   /* =========================
-     Request Location
+     Location
   ========================= */
   const requestLocation = () => {
     if (!navigator.geolocation) {
@@ -81,24 +80,11 @@ export default function CompleteProfile() {
         setLocLoading(false);
       },
       () => {
-        alert("⚠️ السماح بتحديد الموقع ضروري لإكمال التسجيل");
+        alert("⚠️ السماح بالموقع إلزامي");
         setLocLoading(false);
       },
       { enableHighAccuracy: true }
     );
-  };
-
-  /* =========================
-     Back With Confirm
-  ========================= */
-  const backToLogin = () => {
-    const ok = window.confirm(
-      "هل تريد الخروج والعودة إلى صفحة تسجيل الدخول؟"
-    );
-    if (!ok) return;
-
-    localStorage.removeItem("user");
-    navigate("/login", { replace: true });
   };
 
   /* =========================
@@ -115,7 +101,6 @@ export default function CompleteProfile() {
 
     const user = JSON.parse(localStorage.getItem("user")!);
 
-    // تحديث بيانات العميل
     await api.put(`/customers/${user.id}`, {
       name,
       phone,
@@ -124,7 +109,6 @@ export default function CompleteProfile() {
       is_profile_complete: 1,
     });
 
-    // إضافة عنوان
     await api.post("/customer-addresses", {
       customer_id: user.id,
       province: Number(cityId),
@@ -145,15 +129,8 @@ export default function CompleteProfile() {
   return (
     <div style={styles.page}>
       <div style={styles.card}>
-        {/* Back Button */}
-        <button onClick={backToLogin} style={styles.backBtn}>
-          ←
-        </button>
-
         <h2 style={styles.title}>إكمال البيانات</h2>
-        <p style={styles.sub}>يرجى إدخال بياناتك لإكمال التسجيل</p>
 
-        {/* Name */}
         <input
           style={styles.input}
           placeholder="الاسم الكامل"
@@ -161,20 +138,15 @@ export default function CompleteProfile() {
           onChange={(e) => setName(e.target.value)}
         />
 
-        {/* Phone */}
-        <div style={styles.inputBox}>
-          <span style={styles.code}>🇾🇪 +967</span>
-          <input
-            style={styles.inputInner}
-            placeholder="7xxxxxxxx"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-          />
-        </div>
+        <input
+          style={styles.input}
+          placeholder="رقم الجوال"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+        />
 
-        {/* City */}
         <select
-          style={styles.select}
+          style={styles.input}
           value={cityId}
           onChange={(e) => {
             setCityId(e.target.value);
@@ -189,12 +161,10 @@ export default function CompleteProfile() {
           ))}
         </select>
 
-        {/* Neighborhood */}
         <select
-          style={styles.select}
+          style={styles.input}
           value={districtId}
           onChange={(e) => setDistrictId(e.target.value)}
-          disabled={!cityId}
         >
           <option value="">اختر الحي</option>
           {neighborhoods.map((n) => (
@@ -204,9 +174,8 @@ export default function CompleteProfile() {
           ))}
         </select>
 
-        {/* Location Type */}
         <select
-          style={styles.select}
+          style={styles.input}
           value={locationType}
           onChange={(e) => setLocationType(e.target.value)}
         >
@@ -214,20 +183,13 @@ export default function CompleteProfile() {
           <option value="منزل">منزل</option>
           <option value="شقة">شقة</option>
           <option value="عمل">عمل</option>
-          <option value="فيلا">فيلا</option>
         </select>
 
-        {/* Location */}
-        <button style={styles.locBtn} onClick={requestLocation}>
-          {locLoading ? "⏳ جارٍ تحديد الموقع..." : "📍 السماح بتحديد الموقع"}
+        <button onClick={requestLocation} style={styles.locBtn}>
+          {locLoading ? "جارٍ تحديد الموقع..." : "📍 السماح بتحديد الموقع"}
         </button>
 
-        <div style={styles.coords}>
-          <input style={styles.coord} value={latitude} readOnly placeholder="Latitude" />
-          <input style={styles.coord} value={longitude} readOnly placeholder="Longitude" />
-        </div>
-
-        <button style={styles.button} onClick={submit}>
+        <button onClick={submit} style={styles.button}>
           حفظ والمتابعة
         </button>
       </div>
@@ -235,64 +197,32 @@ export default function CompleteProfile() {
   );
 }
 
-/* =========================
-   Styles
-========================= */
 const styles: any = {
   page: {
     minHeight: "100vh",
-    background: "#f0fdf4",
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
+    background: "#f0fdf4",
   },
   card: {
-    position: "relative",
     background: "#fff",
-    padding: "28px",
-    borderRadius: "24px",
+    padding: 24,
+    borderRadius: 16,
     width: "100%",
-    maxWidth: "420px",
-    boxShadow: "0 15px 40px rgba(0,0,0,.1)",
-    textAlign: "center",
+    maxWidth: 420,
   },
-  backBtn: {
-    position: "absolute",
-    top: 16,
-    right: 16,
-    background: "#ecfdf5",
-    border: "none",
-    borderRadius: "50%",
-    width: 40,
-    height: 40,
-    fontSize: 20,
-    cursor: "pointer",
+  title: {
     color: BRAND,
+    fontSize: 20,
+    marginBottom: 12,
   },
-  title: { fontSize: 22, color: BRAND, fontWeight: 700 },
-  sub: { fontSize: 14, marginBottom: 14, color: "#555" },
   input: {
     width: "100%",
     padding: 12,
-    borderRadius: 14,
+    marginBottom: 12,
+    borderRadius: 10,
     border: "1px solid #ddd",
-    marginBottom: 14,
-  },
-  inputBox: {
-    display: "flex",
-    border: "1px solid #ddd",
-    borderRadius: 14,
-    overflow: "hidden",
-    marginBottom: 14,
-  },
-  code: { padding: 12, background: "#ecfdf5", borderLeft: "1px solid #ddd" },
-  inputInner: { flex: 1, padding: 12, border: "none", outline: "none" },
-  select: {
-    width: "100%",
-    padding: 12,
-    borderRadius: 14,
-    border: "1px solid #ddd",
-    marginBottom: 14,
   },
   locBtn: {
     width: "100%",
@@ -300,16 +230,8 @@ const styles: any = {
     background: "#2563eb",
     color: "#fff",
     border: "none",
-    borderRadius: 14,
-    marginBottom: 10,
-  },
-  coords: { display: "flex", gap: 8, marginBottom: 16 },
-  coord: {
-    flex: 1,
-    padding: 10,
-    border: "1px solid #ddd",
-    borderRadius: 12,
-    background: "#f9fafb",
+    borderRadius: 10,
+    marginBottom: 12,
   },
   button: {
     width: "100%",
@@ -317,8 +239,6 @@ const styles: any = {
     background: BRAND,
     color: "#fff",
     border: "none",
-    borderRadius: 16,
-    fontSize: 16,
-    fontWeight: 600,
+    borderRadius: 12,
   },
 };
