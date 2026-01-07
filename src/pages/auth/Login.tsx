@@ -26,20 +26,16 @@ export default function Login() {
         return;
       }
 
-      const { customer, needProfile } = res.data;
+     const { customer, needProfile } = res.data;
 
-      // حفظ بيانات العميل فقط
-      localStorage.setItem(
-        "user",
-        JSON.stringify(customer)
-      );
+localStorage.setItem("user", JSON.stringify(customer));
 
-      // توجيه ذكي
-      if (needProfile) {
-        navigate("/complete-profile");
-      } else {
-        navigate("/");
-      }
+if (needProfile) {
+  navigate("/complete-profile", { replace: true });
+} else {
+  navigate("/home", { replace: true });
+}
+
 
     } catch (err) {
       console.error("Google Login Error:", err);
