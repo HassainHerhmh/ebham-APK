@@ -4,6 +4,9 @@ import api from "../../services/api";
 
 const BRAND = "#166534";
 
+/* =========================
+   Interfaces
+========================= */
 interface City {
   id: number;
   name: string;
@@ -33,18 +36,16 @@ export default function CompleteProfile() {
   const [locLoading, setLocLoading] = useState(false);
 
   /* =========================
-     Fetch Cities ✅
+     Load Cities
   ========================= */
   useEffect(() => {
-    api.get("/cities").then((res) => {
-      if (res.data.success) {
-        setCities(res.data.cities);
-      }
+    api.cities.getCities().then((res: any) => {
+      if (res.success) setCities(res.cities);
     });
   }, []);
 
   /* =========================
-     Fetch Neighborhoods by City ✅
+     Load Neighborhoods
   ========================= */
   const loadNeighborhoods = async (cityId: string) => {
     setDistrictId("");
@@ -52,13 +53,10 @@ export default function CompleteProfile() {
 
     if (!cityId) return;
 
-    const res = await api.get("/cities/neighborhoods/search", {
-      params: { q: "" },
-    });
-
-    if (res.data.success) {
+    const res = await api.cities.searchNeighborhoods("");
+    if (res.success) {
       setNeighborhoods(
-        res.data.neighborhoods.filter(
+        res.neighborhoods.filter(
           (n: Neighborhood) => String(n.city_id) === cityId
         )
       );
@@ -66,7 +64,7 @@ export default function CompleteProfile() {
   };
 
   /* =========================
-     Location
+     Request Location
   ========================= */
   const requestLocation = () => {
     if (!navigator.geolocation) {
@@ -83,11 +81,24 @@ export default function CompleteProfile() {
         setLocLoading(false);
       },
       () => {
-        alert("⚠️ السماح بالموقع إجباري");
+        alert("⚠️ السماح بتحديد الموقع ضروري لإكمال التسجيل");
         setLocLoading(false);
       },
       { enableHighAccuracy: true }
     );
+  };
+
+  /* =========================
+     Back With Confirm
+  ========================= */
+  const backToLogin = () => {
+    const ok = window.confirm(
+      "هل تريد الخروج والعودة إلى صفحة تسجيل الدخول؟"
+    );
+    if (!ok) return;
+
+    localStorage.removeItem("user");
+    navigate("/login", { replace: true });
   };
 
   /* =========================
@@ -99,21 +110,21 @@ export default function CompleteProfile() {
     }
 
     if (!latitude || !longitude) {
-      return alert("⚠️ يجب تفعيل الموقع");
+      return alert("⚠️ يجب السماح بتحديد الموقع");
     }
 
     const user = JSON.parse(localStorage.getItem("user")!);
 
-    // تحديث المستخدم
-    await api.put(`/users/${user.id}`, {
+    // تحديث بيانات العميل
+    await api.put(`/customers/${user.id}`, {
       name,
       phone,
-      city_id: cityId,
-      neighborhood_id: districtId,
+      city_id: Number(cityId),
+      neighborhood_id: Number(districtId),
       is_profile_complete: 1,
     });
 
-    // إضافة العنوان
+    // إضافة عنوان
     await api.post("/customer-addresses", {
       customer_id: user.id,
       province: Number(cityId),
@@ -123,19 +134,26 @@ export default function CompleteProfile() {
       longitude,
     });
 
-    user.name = name;
-    user.phone = phone;
-    user.is_profile_complete = 1;
-    localStorage.setItem("user", JSON.stringify(user));
+    localStorage.setItem(
+      "user",
+      JSON.stringify({ ...user, name, phone })
+    );
 
-    navigate("/home");
+    navigate("/", { replace: true });
   };
 
   return (
     <div style={styles.page}>
       <div style={styles.card}>
-        <h2 style={styles.title}>إكمال البيانات</h2>
+        {/* Back Button */}
+        <button onClick={backToLogin} style={styles.backBtn}>
+          ←
+        </button>
 
+        <h2 style={styles.title}>إكمال البيانات</h2>
+        <p style={styles.sub}>يرجى إدخال بياناتك لإكمال التسجيل</p>
+
+        {/* Name */}
         <input
           style={styles.input}
           placeholder="الاسم الكامل"
@@ -143,16 +161,18 @@ export default function CompleteProfile() {
           onChange={(e) => setName(e.target.value)}
         />
 
+        {/* Phone */}
         <div style={styles.inputBox}>
           <span style={styles.code}>🇾🇪 +967</span>
           <input
+            style={styles.inputInner}
+            placeholder="7xxxxxxxx"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            placeholder="7xxxxxxxx"
-            style={styles.input}
           />
         </div>
 
+        {/* City */}
         <select
           style={styles.select}
           value={cityId}
@@ -169,6 +189,7 @@ export default function CompleteProfile() {
           ))}
         </select>
 
+        {/* Neighborhood */}
         <select
           style={styles.select}
           value={districtId}
@@ -183,6 +204,7 @@ export default function CompleteProfile() {
           ))}
         </select>
 
+        {/* Location Type */}
         <select
           style={styles.select}
           value={locationType}
@@ -195,13 +217,14 @@ export default function CompleteProfile() {
           <option value="فيلا">فيلا</option>
         </select>
 
+        {/* Location */}
         <button style={styles.locBtn} onClick={requestLocation}>
           {locLoading ? "⏳ جارٍ تحديد الموقع..." : "📍 السماح بتحديد الموقع"}
         </button>
 
         <div style={styles.coords}>
-          <input style={styles.coord} value={latitude} readOnly />
-          <input style={styles.coord} value={longitude} readOnly />
+          <input style={styles.coord} value={latitude} readOnly placeholder="Latitude" />
+          <input style={styles.coord} value={longitude} readOnly placeholder="Longitude" />
         </div>
 
         <button style={styles.button} onClick={submit}>
@@ -213,7 +236,7 @@ export default function CompleteProfile() {
 }
 
 /* =========================
-   Styles (نفس السابق)
+   Styles
 ========================= */
 const styles: any = {
   page: {
@@ -224,6 +247,7 @@ const styles: any = {
     alignItems: "center",
   },
   card: {
+    position: "relative",
     background: "#fff",
     padding: "28px",
     borderRadius: "24px",
@@ -232,54 +256,69 @@ const styles: any = {
     boxShadow: "0 15px 40px rgba(0,0,0,.1)",
     textAlign: "center",
   },
-  title: { fontSize: "22px", color: BRAND, fontWeight: 700 },
+  backBtn: {
+    position: "absolute",
+    top: 16,
+    right: 16,
+    background: "#ecfdf5",
+    border: "none",
+    borderRadius: "50%",
+    width: 40,
+    height: 40,
+    fontSize: 20,
+    cursor: "pointer",
+    color: BRAND,
+  },
+  title: { fontSize: 22, color: BRAND, fontWeight: 700 },
+  sub: { fontSize: 14, marginBottom: 14, color: "#555" },
   input: {
     width: "100%",
-    padding: "12px",
-    borderRadius: "14px",
+    padding: 12,
+    borderRadius: 14,
     border: "1px solid #ddd",
-    marginBottom: "14px",
+    marginBottom: 14,
   },
   inputBox: {
     display: "flex",
     border: "1px solid #ddd",
-    borderRadius: "14px",
+    borderRadius: 14,
     overflow: "hidden",
-    marginBottom: "14px",
+    marginBottom: 14,
   },
-  code: { padding: "12px", background: "#ecfdf5", borderLeft: "1px solid #ddd" },
+  code: { padding: 12, background: "#ecfdf5", borderLeft: "1px solid #ddd" },
+  inputInner: { flex: 1, padding: 12, border: "none", outline: "none" },
   select: {
     width: "100%",
-    padding: "12px",
-    borderRadius: "14px",
+    padding: 12,
+    borderRadius: 14,
     border: "1px solid #ddd",
-    marginBottom: "14px",
+    marginBottom: 14,
   },
   locBtn: {
     width: "100%",
-    padding: "12px",
+    padding: 12,
     background: "#2563eb",
     color: "#fff",
     border: "none",
-    borderRadius: "14px",
-    marginBottom: "10px",
+    borderRadius: 14,
+    marginBottom: 10,
   },
-  coords: { display: "flex", gap: "8px", marginBottom: "16px" },
+  coords: { display: "flex", gap: 8, marginBottom: 16 },
   coord: {
     flex: 1,
-    padding: "10px",
+    padding: 10,
     border: "1px solid #ddd",
-    borderRadius: "12px",
+    borderRadius: 12,
     background: "#f9fafb",
   },
   button: {
     width: "100%",
-    padding: "14px",
+    padding: 14,
     background: BRAND,
     color: "#fff",
     border: "none",
-    borderRadius: "16px",
-    fontSize: "16px",
+    borderRadius: 16,
+    fontSize: 16,
     fontWeight: 600,
   },
 };
