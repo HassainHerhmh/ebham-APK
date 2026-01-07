@@ -11,8 +11,14 @@ function getUser() {
 }
 
 function isLoggedIn() {
+  // السماح المؤقت بالدخول لصفحة login
+  if (sessionStorage.getItem("allowLogin")) {
+    return false;
+  }
+
   return !!getUser();
 }
+
 
 function isProfileComplete() {
   const user = getUser();
