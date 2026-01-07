@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { GoogleLogin } from "@react-oauth/google";
+import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
 
 const BRAND_COLOR = "#16a34a";
@@ -7,6 +8,7 @@ const BRAND_COLOR = "#16a34a";
 export default function Login() {
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   /* =========================
      Google Login Handler
@@ -24,16 +26,21 @@ export default function Login() {
         return;
       }
 
-      const { user, token } = res.data;
+      const { customer, needProfile } = res.data;
 
-      // حفظ المستخدم + التوكن (مهم للـ interceptor)
+      // حفظ بيانات العميل فقط
       localStorage.setItem(
         "user",
-        JSON.stringify({ ...user, token })
+        JSON.stringify(customer)
       );
 
-      // توجيه بعد الدخول
-      window.location.href = "/";
+      // توجيه ذكي
+      if (needProfile) {
+        navigate("/complete-profile");
+      } else {
+        navigate("/");
+      }
+
     } catch (err) {
       console.error("Google Login Error:", err);
       alert("حدث خطأ أثناء تسجيل الدخول");
@@ -56,10 +63,10 @@ export default function Login() {
 
         <h2 style={styles.title}>تسجيل الدخول</h2>
         <p style={styles.subtitle}>
-          يرجى إدخال رقم هاتفك للتحقق
+          يمكنك تسجيل الدخول برقم الهاتف أو Google
         </p>
 
-        {/* Phone Input */}
+        {/* Phone Input (قريبًا OTP) */}
         <div style={styles.phoneBox}>
           <span style={styles.country}>🇾🇪 +967</span>
           <input
@@ -71,12 +78,10 @@ export default function Login() {
           />
         </div>
 
-        {/* Send Button (هاتف – لاحقًا) */}
         <button style={styles.sendButton} disabled>
           إرسال
         </button>
 
-        {/* Help */}
         <button style={styles.helpButton}>
           الحصول على مساعدة من خدمة العملاء
         </button>
@@ -84,8 +89,12 @@ export default function Login() {
         {/* Google Login */}
         <div style={{ marginTop: "14px" }}>
           <GoogleLogin
-            onSuccess={(res) => handleGoogleLogin(res.credential!)}
-            onError={() => alert("فشل تسجيل الدخول عبر Google")}
+            onSuccess={(res) =>
+              handleGoogleLogin(res.credential!)
+            }
+            onError={() =>
+              alert("فشل تسجيل الدخول عبر Google")
+            }
             width="100%"
           />
         </div>
@@ -110,7 +119,6 @@ const styles: Record<string, React.CSSProperties> = {
     direction: "rtl",
     fontFamily: "system-ui",
   },
-
   header: {
     background: BRAND_COLOR,
     color: "#fff",
@@ -118,19 +126,16 @@ const styles: Record<string, React.CSSProperties> = {
     borderBottomLeftRadius: "30px",
     borderBottomRightRadius: "30px",
   },
-
   appName: {
     margin: 0,
     fontSize: "28px",
     fontWeight: 700,
   },
-
   appDesc: {
     marginTop: "8px",
     fontSize: "14px",
     opacity: 0.9,
   },
-
   card: {
     background: "#fff",
     margin: "-40px auto 0",
@@ -140,7 +145,6 @@ const styles: Record<string, React.CSSProperties> = {
     boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
     textAlign: "center",
   },
-
   iconCircle: {
     width: "90px",
     height: "90px",
@@ -152,19 +156,16 @@ const styles: Record<string, React.CSSProperties> = {
     justifyContent: "center",
     fontSize: "36px",
   },
-
   title: {
     margin: "8px 0",
     fontSize: "20px",
     fontWeight: 700,
   },
-
   subtitle: {
     fontSize: "14px",
     color: "#666",
     marginBottom: "20px",
   },
-
   phoneBox: {
     display: "flex",
     alignItems: "center",
@@ -173,14 +174,12 @@ const styles: Record<string, React.CSSProperties> = {
     overflow: "hidden",
     marginBottom: "16px",
   },
-
   country: {
     padding: "12px",
     background: "#f9f9f9",
     borderLeft: "1px solid #ddd",
     fontSize: "14px",
   },
-
   input: {
     flex: 1,
     padding: "12px",
@@ -188,7 +187,6 @@ const styles: Record<string, React.CSSProperties> = {
     outline: "none",
     fontSize: "15px",
   },
-
   sendButton: {
     width: "100%",
     padding: "14px",
@@ -202,7 +200,6 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: "12px",
     opacity: 0.7,
   },
-
   helpButton: {
     width: "100%",
     padding: "12px",
