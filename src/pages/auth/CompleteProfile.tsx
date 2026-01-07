@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
-import { ArrowRight } from "lucide-react";
 
 const BRAND = "#166534";
 
@@ -81,7 +80,7 @@ export default function CompleteProfile() {
         setLocLoading(false);
       },
       () => {
-        alert("⚠️ السماح بالموقع إلزامي");
+        alert("⚠️ السماح بالموقع إلزامي لإكمال التسجيل");
         setLocLoading(false);
       },
       { enableHighAccuracy: true }
@@ -128,7 +127,7 @@ export default function CompleteProfile() {
   };
 
   /* =========================
-     Back
+     Back Button
   ========================= */
   const goBack = () => {
     const ok = window.confirm(
@@ -143,9 +142,9 @@ export default function CompleteProfile() {
   return (
     <div style={styles.page}>
       <div style={styles.card}>
-        {/* Back Button */}
+        {/* زر الرجوع */}
         <button onClick={goBack} style={styles.backBtn}>
-          <ArrowRight size={20} />
+          ←
         </button>
 
         <h2 style={styles.title}>إكمال البيانات</h2>
@@ -249,9 +248,8 @@ const styles: any = {
     width: 38,
     height: 38,
     cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
+    fontSize: 20,
+    fontWeight: 700,
   },
   title: {
     textAlign: "center",
