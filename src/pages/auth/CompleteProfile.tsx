@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
+import { ArrowRight } from "lucide-react";
 
 const BRAND = "#166534";
 
@@ -33,7 +34,7 @@ export default function CompleteProfile() {
   const [locLoading, setLocLoading] = useState(false);
 
   /* =========================
-     Fetch Cities
+     Load Cities
   ========================= */
   useEffect(() => {
     api.get("/cities").then((res) => {
@@ -44,7 +45,7 @@ export default function CompleteProfile() {
   }, []);
 
   /* =========================
-     Fetch Neighborhoods
+     Load Neighborhoods
   ========================= */
   const loadNeighborhoods = async (cityId: string) => {
     setDistrictId("");
@@ -126,9 +127,27 @@ export default function CompleteProfile() {
     navigate("/", { replace: true });
   };
 
+  /* =========================
+     Back
+  ========================= */
+  const goBack = () => {
+    const ok = window.confirm(
+      "هل تريد الرجوع؟ سيتم فقدان البيانات غير المحفوظة"
+    );
+    if (ok) {
+      localStorage.removeItem("user");
+      navigate("/login");
+    }
+  };
+
   return (
     <div style={styles.page}>
       <div style={styles.card}>
+        {/* Back Button */}
+        <button onClick={goBack} style={styles.backBtn}>
+          <ArrowRight size={20} />
+        </button>
+
         <h2 style={styles.title}>إكمال البيانات</h2>
 
         <input
@@ -146,7 +165,7 @@ export default function CompleteProfile() {
         />
 
         <select
-          style={styles.input}
+          style={styles.select}
           value={cityId}
           onChange={(e) => {
             setCityId(e.target.value);
@@ -162,9 +181,10 @@ export default function CompleteProfile() {
         </select>
 
         <select
-          style={styles.input}
+          style={styles.select}
           value={districtId}
           onChange={(e) => setDistrictId(e.target.value)}
+          disabled={!cityId}
         >
           <option value="">اختر الحي</option>
           {neighborhoods.map((n) => (
@@ -175,7 +195,7 @@ export default function CompleteProfile() {
         </select>
 
         <select
-          style={styles.input}
+          style={styles.select}
           value={locationType}
           onChange={(e) => setLocationType(e.target.value)}
         >
@@ -183,6 +203,7 @@ export default function CompleteProfile() {
           <option value="منزل">منزل</option>
           <option value="شقة">شقة</option>
           <option value="عمل">عمل</option>
+          <option value="فيلا">فيلا</option>
         </select>
 
         <button onClick={requestLocation} style={styles.locBtn}>
@@ -197,48 +218,83 @@ export default function CompleteProfile() {
   );
 }
 
+/* =========================
+   Styles
+========================= */
 const styles: any = {
   page: {
     minHeight: "100vh",
+    background: "#f0fdf4",
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    background: "#f0fdf4",
+    direction: "rtl",
   },
   card: {
+    position: "relative",
     background: "#fff",
-    padding: 24,
-    borderRadius: 16,
+    padding: "28px",
+    borderRadius: "20px",
     width: "100%",
-    maxWidth: 420,
+    maxWidth: "420px",
+    boxShadow: "0 20px 45px rgba(0,0,0,.12)",
+  },
+  backBtn: {
+    position: "absolute",
+    top: 16,
+    right: 16,
+    background: "#f1f5f9",
+    border: "none",
+    borderRadius: "50%",
+    width: 38,
+    height: 38,
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
   },
   title: {
+    textAlign: "center",
     color: BRAND,
-    fontSize: 20,
-    marginBottom: 12,
+    fontSize: 22,
+    fontWeight: 700,
+    marginBottom: 20,
   },
   input: {
     width: "100%",
-    padding: 12,
-    marginBottom: 12,
-    borderRadius: 10,
-    border: "1px solid #ddd",
+    padding: "14px",
+    marginBottom: "12px",
+    borderRadius: "14px",
+    border: "1.5px solid #d1d5db",
+    fontSize: 15,
+  },
+  select: {
+    width: "100%",
+    padding: "14px",
+    marginBottom: "12px",
+    borderRadius: "14px",
+    border: "1.5px solid #d1d5db",
+    fontSize: 15,
+    background: "#fff",
   },
   locBtn: {
     width: "100%",
-    padding: 12,
+    padding: "14px",
     background: "#2563eb",
     color: "#fff",
     border: "none",
-    borderRadius: 10,
-    marginBottom: 12,
+    borderRadius: "14px",
+    marginBottom: "12px",
+    fontWeight: 600,
   },
   button: {
     width: "100%",
-    padding: 14,
+    padding: "16px",
     background: BRAND,
     color: "#fff",
     border: "none",
-    borderRadius: 12,
+    borderRadius: "16px",
+    fontSize: 16,
+    fontWeight: 700,
   },
 };
