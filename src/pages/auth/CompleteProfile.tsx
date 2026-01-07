@@ -30,13 +30,12 @@ export default function CompleteProfile() {
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
   const [locLoading, setLocLoading] = useState(false);
-  const [locAllowed, setLocAllowed] = useState(false);
 
   /* =========================
      Fetch Cities
   ========================= */
   useEffect(() => {
-    api.cities.getCities().then((res: any) => {
+    (api as any).cities.getCities().then((res: any) => {
       if (res.success) setCities(res.cities);
     });
   }, []);
@@ -50,7 +49,7 @@ export default function CompleteProfile() {
 
     if (!cityId) return;
 
-    const res = await api.cities.searchNeighborhoods("");
+    const res = await (api as any).cities.searchNeighborhoods("");
     if (res.success) {
       setNeighborhoods(
         res.neighborhoods.filter(
@@ -61,7 +60,7 @@ export default function CompleteProfile() {
   };
 
   /* =========================
-     Request Location
+     Request Location (إجباري)
   ========================= */
   const requestLocation = () => {
     if (!navigator.geolocation) {
@@ -75,12 +74,10 @@ export default function CompleteProfile() {
       (pos) => {
         setLatitude(pos.coords.latitude.toString());
         setLongitude(pos.coords.longitude.toString());
-        setLocAllowed(true);
         setLocLoading(false);
       },
       () => {
         alert("⚠️ السماح بتفعيل الموقع ضروري لإكمال التسجيل");
-        setLocAllowed(false);
         setLocLoading(false);
       },
       { enableHighAccuracy: true }
@@ -184,9 +181,7 @@ export default function CompleteProfile() {
 
         {/* Location */}
         <button style={styles.locBtn} onClick={requestLocation}>
-          {locLoading
-            ? "⏳ جارٍ تحديد الموقع..."
-            : "📍 السماح بتحديد الموقع"}
+          {locLoading ? "⏳ جارٍ تحديد الموقع..." : "📍 السماح بتحديد الموقع"}
         </button>
 
         <div style={styles.coords}>
