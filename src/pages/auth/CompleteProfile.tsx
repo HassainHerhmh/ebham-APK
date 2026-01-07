@@ -33,16 +33,18 @@ export default function CompleteProfile() {
   const [locLoading, setLocLoading] = useState(false);
 
   /* =========================
-     Fetch Cities
+     Fetch Cities ✅
   ========================= */
   useEffect(() => {
-    api.cities.getCities().then((res: any) => {
-      if (res.success) setCities(res.cities);
+    api.get("/cities").then((res) => {
+      if (res.data.success) {
+        setCities(res.data.cities);
+      }
     });
   }, []);
 
   /* =========================
-     Fetch Neighborhoods
+     Fetch Neighborhoods by City ✅
   ========================= */
   const loadNeighborhoods = async (cityId: string) => {
     setDistrictId("");
@@ -50,10 +52,13 @@ export default function CompleteProfile() {
 
     if (!cityId) return;
 
-    const res = await api.cities.searchNeighborhoods("");
-    if (res.success) {
+    const res = await api.get("/cities/neighborhoods/search", {
+      params: { q: "" },
+    });
+
+    if (res.data.success) {
       setNeighborhoods(
-        res.neighborhoods.filter(
+        res.data.neighborhoods.filter(
           (n: Neighborhood) => String(n.city_id) === cityId
         )
       );
@@ -78,7 +83,7 @@ export default function CompleteProfile() {
         setLocLoading(false);
       },
       () => {
-        alert("⚠️ السماح بالموقع إجباري لإكمال التسجيل");
+        alert("⚠️ السماح بالموقع إجباري");
         setLocLoading(false);
       },
       { enableHighAccuracy: true }
@@ -99,7 +104,7 @@ export default function CompleteProfile() {
 
     const user = JSON.parse(localStorage.getItem("user")!);
 
-    // تحديث بيانات العميل
+    // تحديث المستخدم
     await api.put(`/users/${user.id}`, {
       name,
       phone,
@@ -130,9 +135,7 @@ export default function CompleteProfile() {
     <div style={styles.page}>
       <div style={styles.card}>
         <h2 style={styles.title}>إكمال البيانات</h2>
-        <p style={styles.sub}>يرجى إدخال بياناتك لإكمال التسجيل</p>
 
-        {/* Name */}
         <input
           style={styles.input}
           placeholder="الاسم الكامل"
@@ -140,7 +143,6 @@ export default function CompleteProfile() {
           onChange={(e) => setName(e.target.value)}
         />
 
-        {/* Phone */}
         <div style={styles.inputBox}>
           <span style={styles.code}>🇾🇪 +967</span>
           <input
@@ -151,7 +153,6 @@ export default function CompleteProfile() {
           />
         </div>
 
-        {/* City */}
         <select
           style={styles.select}
           value={cityId}
@@ -168,7 +169,6 @@ export default function CompleteProfile() {
           ))}
         </select>
 
-        {/* Neighborhood */}
         <select
           style={styles.select}
           value={districtId}
@@ -183,7 +183,6 @@ export default function CompleteProfile() {
           ))}
         </select>
 
-        {/* Location Type */}
         <select
           style={styles.select}
           value={locationType}
@@ -196,7 +195,6 @@ export default function CompleteProfile() {
           <option value="فيلا">فيلا</option>
         </select>
 
-        {/* Location */}
         <button style={styles.locBtn} onClick={requestLocation}>
           {locLoading ? "⏳ جارٍ تحديد الموقع..." : "📍 السماح بتحديد الموقع"}
         </button>
@@ -215,7 +213,7 @@ export default function CompleteProfile() {
 }
 
 /* =========================
-   Styles
+   Styles (نفس السابق)
 ========================= */
 const styles: any = {
   page: {
@@ -235,7 +233,6 @@ const styles: any = {
     textAlign: "center",
   },
   title: { fontSize: "22px", color: BRAND, fontWeight: 700 },
-  sub: { fontSize: "14px", marginBottom: "16px", color: "#555" },
   input: {
     width: "100%",
     padding: "12px",
